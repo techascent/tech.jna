@@ -52,3 +52,9 @@
           warmup (run-timed-fns)
           times (run-timed-fns)]
       (println times))))
+
+
+(deftest set-constant!
+  (let [test-buf (dtype-jna/make-typed-pointer :int64 5)]
+    (dtype/set-constant! test-buf 0 1 (dtype/ecount test-buf))
+    (is (= [1 1 1 1 1] (dtype/->vector test-buf)))))
