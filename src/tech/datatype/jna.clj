@@ -40,6 +40,17 @@
   (Pointer. (+ offset (Pointer/nativeValue ptr))))
 
 
+(defn make-jna-pointer
+  "Use with care..."
+  ^Pointer [^long address]
+  (Pointer. address))
+
+
+(defn pointer->address
+  ^long [^Pointer ptr]
+  (Pointer/nativeValue ptr))
+
+
 (defrecord TypedPointer [^Pointer ptr ^long byte-len datatype]
   PToPtr
   (->ptr-backing-store [item] ptr)
@@ -104,9 +115,39 @@
                         (unsigned/->typed-buffer item))))
 
 
-(defn typed-buffer->ptr
-  ^Pointer [typed-buffer]
-  (->ptr-backing-store typed-buffer))
+;;If you are a typed-pointer then you can advertise that you support the jna-buffer container type.
+;;If you are not, then do not.
+(defn typed-pointer?
+  [item]
+  (and (unsigned/typed-buffer? item)
+       (satisfies? PToPtr item)))
+
+
+(defn as-typed-pointer
+  "Get something substitutable as a typed-pointer.
+Implement all the protocols necessary to be tech.datatype.java-unsigned/typed-buffer
+*and* PToPtr and you can be considered a typed-pointer."
+  [item]
+  (when (typed-pointer? item)
+    item))
+
+
+(defn ->typed-pointer
+  "Creates a typed-pointer object.
+  Implement PToPtr, mp/PElementCount, and dtype-base/get-datatype
+and we convert your thing to a typed pointer."
+  [item]
+  ;;Implement 3 protocols and we provide the conversion.
+  (let [ptr-data (->ptr-backing-store item)
+        ptr-dtype (dtype-base/get-datatype item)
+        num-bytes (* (dtype-base/ecount item)
+                     (dtype-base/datatype->byte-size ptr-dtype))]
+    (->TypedPointer ptr-data num-bytes ptr-dtype)))
+
+
+(defn typed-pointer->ptr
+  ^Pointer [typed-pointer]
+  (->ptr-backing-store typed-pointer))
 
 
 (dtype-base/add-container-conversion-fn
@@ -116,7 +157,7 @@
     0]))
 
 
-(defn unsafe-address->typed-buffer
+(defn unsafe-address->typed-pointer
   [^long address ^long byte-len datatype]
   (->TypedPointer (Pointer. address) byte-len datatype))
 
@@ -130,7 +171,7 @@
           dorun)))
 
 
-(defn make-typed-buffer
+(defn make-typed-pointer
   [datatype elem-count-or-seq & [options]]
   (let [n-elems (long (if (number? elem-count-or-seq)
                         elem-count-or-seq
@@ -140,9 +181,9 @@
         byte-len (* n-elems (dtype-base/datatype->byte-size datatype))
         data (Native/malloc byte-len)
         _ (resource/make-resource #(Native/free data))
-        retval (unsafe-address->typed-buffer data byte-len datatype)
+        retval (unsafe-address->typed-pointer data byte-len datatype)
         jvm-datatype (unsigned/datatype->jvm-datatype datatype)
-        ptr-data (typed-buffer->ptr retval)]
+        ptr-data (typed-pointer->ptr retval)]
     (when-not (number? elem-count-or-seq)
       (case jvm-datatype
         :int8 (typed-data-setter :int8 setByte ptr-data elem-count-or-seq)
@@ -167,7 +208,7 @@
   (let [jvm-dtype (unsigned/datatype->jvm-datatype datatype)]
     `(fn [src# src-offset# dst# dst-offset# n-elems# options#]
        (let [src# (primitive/datatype->array-cast-fn ~jvm-dtype src#)
-             dst-ptr# (typed-buffer->ptr dst#)]
+             dst-ptr# (typed-pointer->ptr dst#)]
          (.write dst-ptr# (int dst-offset#) src# (int src-offset#) (int n-elems#))))))
 
 
@@ -175,7 +216,7 @@
   [datatype]
   (let [jvm-dtype (unsigned/datatype->jvm-datatype datatype)]
     `(fn [src# src-offset# dst# dst-offset# n-elems# options#]
-       (let [src# (typed-buffer->ptr src#)
+       (let [src# (typed-pointer->ptr src#)
              dst# (primitive/datatype->array-cast-fn ~jvm-dtype dst#)]
          (.read src# (int src-offset#) dst# (int dst-offset#) (int n-elems#))))))
 
@@ -187,8 +228,8 @@
     (if (or (= src-dtype dst-dtype)
             (and (:unchecked? options)
                  (unsigned/direct-conversion? src-dtype dst-dtype)))
-      (let [src (typed-buffer->ptr src)
-            dst (typed-buffer->ptr dst)
+      (let [src (typed-pointer->ptr src)
+            dst (typed-pointer->ptr dst)
             byte-size (dtype-base/datatype->byte-size src-dtype)
             _ (when-not (= byte-size (dtype-base/datatype->byte-size dst-dtype))
                 (throw (ex-info "src/dst datatype size mismatch"
