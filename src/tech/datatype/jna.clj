@@ -167,10 +167,11 @@ and we convert your thing to a typed pointer."
 
 (defmacro typed-data-setter
   [datatype set-fn ptr item-seq]
-  `(do
+  `(let [byte-size# (dtype-base/datatype->byte-size ~datatype)]
      (->> ~item-seq
           (map-indexed (fn [idx# val#]
-                         (. ~ptr ~set-fn idx# (primitive/datatype->unchecked-cast-fn :ignored ~datatype val#))))
+                         (. ~ptr ~set-fn (* (long idx#) byte-size#)
+                            (primitive/datatype->unchecked-cast-fn :ignored ~datatype val#))))
           dorun)))
 
 
@@ -190,11 +191,11 @@ and we convert your thing to a typed pointer."
     (when-not (number? elem-count-or-seq)
       (case jvm-datatype
         :int8 (typed-data-setter :int8 setByte ptr-data elem-count-or-seq)
-        :int16 (typed-data-setter :int16 setByte ptr-data elem-count-or-seq)
-        :int32 (typed-data-setter :int32 setByte ptr-data elem-count-or-seq)
-        :int64 (typed-data-setter :int64 setByte ptr-data elem-count-or-seq)
-        :float32 (typed-data-setter :float32 setByte ptr-data elem-count-or-seq)
-        :float64 (typed-data-setter :float64 setByte ptr-data elem-count-or-seq)))
+        :int16 (typed-data-setter :int16 setShort ptr-data elem-count-or-seq)
+        :int32 (typed-data-setter :int32 setInt ptr-data elem-count-or-seq)
+        :int64 (typed-data-setter :int64 setLong ptr-data elem-count-or-seq)
+        :float32 (typed-data-setter :float32 setFloat ptr-data elem-count-or-seq)
+        :float64 (typed-data-setter :float64 setDouble ptr-data elem-count-or-seq)))
     retval))
 
 
