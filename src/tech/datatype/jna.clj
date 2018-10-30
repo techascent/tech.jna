@@ -2,6 +2,8 @@
   (:require [tech.datatype.base :as dtype-base]
             [tech.datatype.java-primitive :as primitive]
             [tech.datatype.java-unsigned :as unsigned]
+            [tech.datatype :as dtype]
+            [tech.jna :as jna]
             [tech.resource :as resource]
             [clojure.core.matrix.protocols :as mp])
   (:import [com.sun.jna Pointer Native Function NativeLibrary]
@@ -12,18 +14,13 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 
-(def ^:private c-lib
-  (memoize
-   (fn []
-     (NativeLibrary/getInstance "c"))))
 
-
-(def ^:private memset-fn
-  (memoize
-   (fn []
-     (let [lib-fn (.getFunction ^NativeLibrary (c-lib) "memset")]
-       (fn [src-ptr val num-bytes]
-         (.invoke lib-fn Integer (object-array [src-ptr (int val) (int num-bytes)])))))))
+(jna/def-jna-fn "c" memset
+  "Set a block of memory to a value"
+  Pointer
+  [data jna/ensure-ptr]
+  [val int]
+  [num-bytes int])
 
 
 (defprotocol PToPtr
@@ -84,7 +81,7 @@
         (let [byte-size (dtype-base/datatype->byte-size datatype)
               offset-bytes (* byte-size (long offset))
               n-elems-bytes (* byte-size (long elem-count))]
-          ((memset-fn) (offset-pointer ptr offset-bytes) (dtype-base/cast value datatype) n-elems-bytes))
+          (memset (offset-pointer ptr offset-bytes) (dtype-base/cast value datatype) n-elems-bytes))
         (dtype-base/set-constant! (unsigned/->typed-buffer item)
                                   offset value elem-count))))
   (get-value [item offset]
@@ -187,24 +184,18 @@ and we convert your thing to a typed pointer."
         _ (resource/make-resource #(Native/free data))
         retval (unsafe-address->typed-pointer data byte-len datatype)
         jvm-datatype (unsigned/datatype->jvm-datatype datatype)
-        ptr-data (typed-pointer->ptr retval)]
-    (when-not (number? elem-count-or-seq)
-      (case jvm-datatype
-        :int8 (typed-data-setter :int8 setByte ptr-data elem-count-or-seq)
-        :int16 (typed-data-setter :int16 setShort ptr-data elem-count-or-seq)
-        :int32 (typed-data-setter :int32 setInt ptr-data elem-count-or-seq)
-        :int64 (typed-data-setter :int64 setLong ptr-data elem-count-or-seq)
-        :float32 (typed-data-setter :float32 setFloat ptr-data elem-count-or-seq)
-        :float64 (typed-data-setter :float64 setDouble ptr-data elem-count-or-seq)))
+        ptr-data (typed-pointer->ptr retval)
+        data-ary (dtype/make-array-of-type jvm-datatype elem-count-or-seq {:unchecked? true})]
+    (dtype/copy! data-ary 0 retval 0 n-elems {:unchecked? true})
     retval))
 
 
-(def ^:private memcpy-fn
-  (memoize
-   (fn []
-     (let [native-fn (.getFunction ^NativeLibrary (c-lib) "memcpy")]
-       (fn [^Pointer dst ^Pointer src n-bytes]
-         (.invoke native-fn Integer (object-array [dst src n-bytes])))))))
+(jna/def-jna-fn "c" memcpy
+  "Copy bytes from one object to another"
+  Pointer
+  [dst jna/ensure-ptr]
+  [src jna/ensure-ptr]
+  [n-bytes int])
 
 
 (defmacro ^:private array->buffer-copy
@@ -241,12 +232,10 @@ and we convert your thing to a typed pointer."
                                  :dst-datatype dst-dtype})))
             src-byte-offset (* (long src-offset) byte-size)
             dst-byte-offset (* (long dst-offset) byte-size)
-            copy-byte-len (* (long n-elems) byte-size)
-            ;;Use memcpy!
-            copy-fn (memcpy-fn)]
-        (copy-fn (offset-pointer dst dst-byte-offset)
-                 (offset-pointer src src-byte-offset)
-                 copy-byte-len))
+            copy-byte-len (* (long n-elems) byte-size)]
+        (memcpy (offset-pointer dst dst-byte-offset)
+                (offset-pointer src src-byte-offset)
+                copy-byte-len))
       (dtype-base/copy! (unsigned/->typed-buffer src) src-offset
                         (unsigned/->typed-buffer dst) dst-offset
                         n-elems options))))
