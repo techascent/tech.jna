@@ -1,4 +1,7 @@
 (ns tech.jna
+  (:require [tech.jna.base :as base]
+            [tech.datatype.jna :as dtype-jna]
+            [tech.datatype :as dtype])
   (:import [com.sun.jna Native NativeLibrary Pointer Function]
            [com.sun.jna.ptr PointerByReference]))
 
@@ -9,83 +12,59 @@
 
 
 
-(def load-library
-  (memoize
-   (fn [libname]
-     (NativeLibrary/getInstance libname))))
+(defn load-library
+  [libname]
+  (base/load-library libname))
 
-
-(def do-find-function
-  (memoize
-   (fn [fn-name libname]
-     (.getFunction ^NativeLibrary (load-library libname) fn-name))))
 
 (defn find-function
   ^Function [fn-name libname]
-  (do-find-function fn-name libname))
+  (base/find-function fn-name libname))
 
 
 (defn unsafe-read-byte
   [^Pointer byte-ary ^long idx]
-  (.get (.getByteBuffer byte-ary idx 1) 0))
+  (base/unsafe-read-byte byte-ary idx))
 
 
 (defn variable-byte-ptr->string
   "Convert a c-string into a string"
   [^Pointer ptr-addr]
-  (if (= 0 (Pointer/nativeValue ptr-addr))
-    ""
-    (String. ^"[B"
-             (into-array Byte/TYPE
-                         (take-while #(not= % 0)
-                                     (map #(unsafe-read-byte
-                                            ptr-addr %)
-                                          (range)))))))
+  (base/variable-byte-ptr->string ptr-addr))
+
+
+(defn- string->ptr
+  ^Pointer [^String data]
+  (let [str-bytes (.getBytes data "ASCII")
+        num-bytes (+ (alength str-bytes) 1)
+        typed-data (dtype-jna/make-typed-pointer :int8 num-bytes)]
+    (dtype/set-constant! typed-data 0 0 (dtype/ecount typed-data))
+    (dtype/copy! str-bytes typed-data)
+    (dtype-jna/->ptr-backing-store typed-data)))
+
 
 (defn checknil
   ^Pointer [value]
-  (if (instance? Pointer value)
-    (checknil (Pointer/nativeValue value))
-    (if (= 0 (long value))
-      (throw (ex-info "Pointer value is nil"
-                      {}))
-      (Pointer. value))))
+  (base/checknil value))
 
 
 (defn ensure-type
   [item-cls item]
-  (when-not (instance? item-cls item)
-    (throw (ex-info "Item is not desired type"
-                    {:item-cls item-cls
-                     :item item})))
-  item)
+  (base/ensure-type item-cls item))
 
 
 (defn ensure-ptr-ptr
   ^PointerByReference [item]
-  (ensure-type PointerByReference item))
+  (base/ensure-ptr-ptr item))
 
 
 (defn ensure-ptr
   ^Pointer [item]
-  (ensure-type Pointer item))
-
-
-(defn to-typed-fn
-  ^Function [item] item)
+  (base/ensure-ptr item))
 
 
 (defmacro def-jna-fn
   "TVM functions are very regular so the mapping to them can exploit this.
 Argpair is of type [symbol type-coersion]."
   [libname fn-name docstring rettype & argpairs]
-  `(defn ~fn-name
-     ~docstring
-     ~(mapv first argpairs)
-     (let [~'tvm-fn (find-function ~(str fn-name) ~libname)
-           ~'fn-args (object-array ~(mapv (fn [[arg-symbol arg-coersion]]
-                                            `(~arg-coersion ~arg-symbol))
-                                          argpairs))]
-       ~(if rettype
-          `(.invoke (to-typed-fn ~'tvm-fn) ~rettype ~'fn-args)
-          `(.invoke (to-typed-fn ~'tvm-fn) ~'fn-args)))))
+  `(base/def-jna-fn ~libname ~fn-name ~docstring ~rettype ~@argpairs))

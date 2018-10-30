@@ -3,7 +3,7 @@
             [tech.datatype.java-primitive :as primitive]
             [tech.datatype.java-unsigned :as unsigned]
             [tech.datatype :as dtype]
-            [tech.jna :as jna]
+            [tech.jna.base :as jna]
             [tech.resource :as resource]
             [clojure.core.matrix.protocols :as mp])
   (:import [com.sun.jna Pointer Native Function NativeLibrary]
