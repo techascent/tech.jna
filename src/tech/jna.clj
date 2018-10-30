@@ -33,7 +33,7 @@
   (base/variable-byte-ptr->string ptr-addr))
 
 
-(defn- string->ptr
+(defn string->ptr
   ^Pointer [^String data]
   (let [str-bytes (.getBytes data "ASCII")
         num-bytes (+ (alength str-bytes) 1)
