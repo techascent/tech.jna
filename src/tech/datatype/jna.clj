@@ -7,6 +7,7 @@
             [tech.resource :as resource]
             [clojure.core.matrix.protocols :as mp])
   (:import [com.sun.jna Pointer Native Function NativeLibrary]
+           [com.sun.jna.ptr PointerByReference]
            [java.nio ByteBuffer]))
 
 
@@ -25,6 +26,13 @@
 
 (defprotocol PToPtr
   (->ptr-backing-store [item]))
+
+
+(extend-protocol PToPtr
+  Pointer
+  (->ptr-backing-store [item] item)
+  PointerByReference
+  (->ptr-backing-store [item] (.getValue ^PointerByReference item)))
 
 
 (defn- integer-datatype?

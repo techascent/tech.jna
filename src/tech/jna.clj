@@ -33,6 +33,12 @@
   (base/variable-byte-ptr->string ptr-addr))
 
 
+(defn char-ptr-ptr->string-vec
+  "Decode a char** ptr."
+  [^long num-strings ^Pointer char-ptr-ptr]
+  (base/char-ptr-ptr->string-vec num-strings char-ptr-ptr))
+
+
 (defn string->ptr
   ^Pointer [^String data]
   (let [str-bytes (.getBytes data "ASCII")
@@ -45,7 +51,15 @@
 
 (defn checknil
   ^Pointer [value]
-  (base/checknil value))
+  (let [value (if (satisfies? dtype-jna/PToPtr value)
+                (dtype-jna/->ptr-backing-store value)
+                value)]
+    (if (instance? Pointer value)
+      (checknil (Pointer/nativeValue value))
+      (if (= 0 (long value))
+        (throw (ex-info "Pointer value is nil"
+                        {}))
+        (Pointer. value)))))
 
 
 (defn ensure-type

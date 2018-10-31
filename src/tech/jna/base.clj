@@ -41,14 +41,21 @@
                                           (range)))))))
 
 
-(defn checknil
-  ^Pointer [value]
-  (if (instance? Pointer value)
-    (checknil (Pointer/nativeValue value))
-    (if (= 0 (long value))
-      (throw (ex-info "Pointer value is nil"
-                      {}))
-      (Pointer. value))))
+(defn char-ptr-ptr->string-vec
+  "Decode a char** ptr."
+  [^long num-strings ^Pointer char-ptr-ptr]
+  (let [base-address (Pointer/nativeValue char-ptr-ptr)]
+    (->> (range num-strings)
+         (map (fn [name-idx]
+                (let [new-ptr (-> (+ (* (long name-idx) Native/POINTER_SIZE)
+                                     base-address)
+                                  (Pointer.))
+                      char-ptr (case Native/POINTER_SIZE
+                                 8 (.getLong new-ptr 0)
+                                 4 (.getInt new-ptr 0))]
+                  (variable-byte-ptr->string (Pointer. char-ptr)))))
+         ;;Don't be lazy.  the ptr may be released.
+         vec)))
 
 
 (defn ensure-type
