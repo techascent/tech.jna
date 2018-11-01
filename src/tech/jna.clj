@@ -2,7 +2,7 @@
   (:require [tech.jna.base :as base]
             [tech.datatype.jna :as dtype-jna]
             [tech.datatype :as dtype])
-  (:import [com.sun.jna Native NativeLibrary Pointer Function]
+  (:import [com.sun.jna Native NativeLibrary Pointer Function Platform]
            [com.sun.jna.ptr PointerByReference]))
 
 
@@ -11,9 +11,46 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 
+(defn add-library-path
+  "Add a search path.  The multimethod (base/find-library pathtype path) is called to
+  expand the pathtype, path into one or more actual paths to attempt.  Valid existing
+  pathtypes are
+
+:system - no changes, looks in system paths.
+:java-library-path - Appends library to all paths in java-library-paths
+:resource - Uses jna Native/extractFromResourcePath"
+  [libname pathtype path]
+  (base/add-library-path libname pathtype path))
+
+
+(defn clear-library-paths
+  "Clear the library search paths for a specific library.
+Use with care; the default if non found is:
+[[:system libname]
+ [:java-library-path libname]]."
+  [libname]
+  (base/clear-library-paths libname))
+
+
+(defn library-paths
+  "Get the current library search paths for a library."
+  [libname]
+  (base/library-paths libname))
+
+
+(defn map-shared-library-name
+  "Map a stem to a shared library name in platform specific manner"
+  [libname]
+  (base/map-shared-library-name libname))
+
+
+(defn set-loaded-library!
+  "Override the search mechanism and set the native library to X."
+  [libname native-library]
+  (base/set-loaded-library! libname native-library))
 
 (defn load-library
-  [libname]
+  ^NativeLibrary [libname]
   (base/load-library libname))
 
 
@@ -29,7 +66,7 @@
 
 (defn variable-byte-ptr->string
   "Convert a c-string into a string"
-  [^Pointer ptr-addr]
+  ^String [^Pointer ptr-addr]
   (base/variable-byte-ptr->string ptr-addr))
 
 

@@ -1,4 +1,4 @@
-(defproject techascent/tech.jna "1.9-SNAPSHOT"
+(defproject techascent/tech.jna "1.9"
   :description "Bindings of tech.datatype system to jna."
   :url "http://github.com/tech-ascent/tech.jna"
   :license {:name "Eclipse Public License"
@@ -6,4 +6,5 @@
   :dependencies [[org.clojure/clojure "1.9.0"]
                  [net.java.dev.jna/jna "5.0.0"]
                  [techascent/tech.datatype "1.2"]
-                 [techascent/tech.resource "2.0"]])
+                 [techascent/tech.resource "2.0"]]
+  :profiles {:dev {:dependencies [[com.taoensso/timbre "4.10.0"]]}})
