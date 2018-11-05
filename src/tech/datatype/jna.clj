@@ -56,6 +56,9 @@
   (Pointer/nativeValue ptr))
 
 
+(declare make-typed-pointer)
+
+
 (defrecord TypedPointer [^Pointer ptr ^long byte-len datatype]
   PToPtr
   (->ptr-backing-store [item] ptr)
@@ -105,6 +108,11 @@
   (copy-raw->item! [raw-data ary-target target-offset options]
     (dtype-base/copy-raw->item! (unsigned/->typed-buffer raw-data) ary-target
                                 target-offset options))
+
+  dtype-base/PPrototype
+  (from-prototype [item]
+    (make-typed-pointer datatype (/ byte-len (dtype/datatype->byte-size datatype))))
+
   primitive/PToBuffer
   (->buffer-backing-store [item]
     (let [jvm-type (unsigned/datatype->jvm-datatype datatype)
@@ -190,11 +198,11 @@ and we convert your thing to a typed pointer."
         byte-len (* n-elems (dtype-base/datatype->byte-size datatype))
         data (Native/malloc byte-len)
         _ (resource/make-resource #(Native/free data))
-        retval (unsafe-address->typed-pointer data byte-len datatype)
-        jvm-datatype (unsigned/datatype->jvm-datatype datatype)
-        ptr-data (typed-pointer->ptr retval)
-        data-ary (dtype/make-array-of-type jvm-datatype elem-count-or-seq {:unchecked? true})]
-    (dtype/copy! data-ary 0 retval 0 n-elems {:unchecked? true})
+        retval (unsafe-address->typed-pointer data byte-len datatype)]
+    (when-not (number? elem-count-or-seq)
+      (let [jvm-datatype (unsigned/datatype->jvm-datatype datatype)
+            data-ary (dtype/make-array-of-type jvm-datatype elem-count-or-seq {:unchecked? true})]
+        (dtype/copy! data-ary 0 retval 0 n-elems {:unchecked? true})))
     retval))
 
 
