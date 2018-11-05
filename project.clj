@@ -1,4 +1,4 @@
-(defproject techascent/tech.jna "1.10"
+(defproject techascent/tech.jna "1.11-SNAPSHOT"
   :description "Bindings of tech.datatype system to jna."
   :url "http://github.com/tech-ascent/tech.jna"
   :license {:name "Eclipse Public License"
