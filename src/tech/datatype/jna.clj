@@ -110,8 +110,8 @@
                                 target-offset options))
 
   dtype-base/PPrototype
-  (from-prototype [item]
-    (make-typed-pointer datatype (/ byte-len (dtype/datatype->byte-size datatype))))
+  (from-prototype [item datatype shape]
+    (make-typed-pointer datatype (dtype-base/shape->ecount shape)))
 
   primitive/PToBuffer
   (->buffer-backing-store [item]
