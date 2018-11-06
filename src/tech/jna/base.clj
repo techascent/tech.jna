@@ -122,7 +122,9 @@
             (Native/extractFromResourcePath ^String path))
           (catch Throwable e
             (log-info (format "Failed to find library %s as a resource" path))))]
-    (.getCanonicalPath file)))
+    (if file
+      (.getCanonicalPath file)
+      path)))
 
 
 (defmethod expand-pathtype :java-library-path
