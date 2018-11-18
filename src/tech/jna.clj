@@ -10,6 +10,12 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 
+(defprotocol PToPtr
+  (->ptr-backing-store [item]
+    "Conversion to a jna pointer type that points to the data of the
+object."))
+
+
 (defn add-library-path
   "Add a search path.  The multimethod (base/find-library pathtype path) is called to
   expand the pathtype, path into one or more actual paths to attempt.  Valid existing
