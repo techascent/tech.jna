@@ -1,7 +1,6 @@
 (ns tech.jna
   (:require [tech.jna.base :as base]
-            [tech.datatype.jna :as dtype-jna]
-            [tech.datatype :as dtype])
+            [tech.gc-resource :as gc-resource])
   (:import [com.sun.jna Native NativeLibrary Pointer Function Platform]
            [com.sun.jna.ptr PointerByReference]))
 
@@ -49,6 +48,7 @@ Use with care; the default if non found is:
   [libname native-library]
   (base/set-loaded-library! libname native-library))
 
+
 (defn load-library
   ^NativeLibrary [libname]
   (base/load-library libname))
@@ -59,6 +59,21 @@ Use with care; the default if non found is:
   (base/find-function fn-name libname))
 
 
+(defn malloc-untracked
+  "Malloc pointer of Y bytes.  Up to call to call Native/free on result at some point"
+  ^Pointer [^long num-bytes]
+  (Pointer. (Native/malloc num-bytes)))
+
+
+(defn malloc
+  "Malloc a pointer of Y bytes.  Track using both resource context
+  and gc system."
+  ^Pointer [^long num-bytes]
+  (let [retval (malloc-untracked num-bytes)]
+    (gc-resource/track retval #(Native/free (Pointer/nativeValue retval)))
+    retval))
+
+
 (defn unsafe-read-byte
   [^Pointer byte-ary ^long idx]
   (base/unsafe-read-byte byte-ary idx))
@@ -67,7 +82,7 @@ Use with care; the default if non found is:
 (defn variable-byte-ptr->string
   "Convert a c-string into a string"
   ^String [^Pointer ptr-addr]
-  (base/variable-byte-ptr->string ptr-addr))
+  (.getString ptr-addr 0 "ASCII"))
 
 
 (defn char-ptr-ptr->string-vec
@@ -78,25 +93,19 @@ Use with care; the default if non found is:
 
 (defn string->ptr
   ^Pointer [^String data]
-  (let [str-bytes (.getBytes data "ASCII")
-        num-bytes (+ (alength str-bytes) 1)
-        typed-data (dtype-jna/make-typed-pointer :int8 num-bytes)]
-    (dtype/set-constant! typed-data 0 0 (dtype/ecount typed-data))
-    (dtype/copy! str-bytes typed-data)
-    (dtype-jna/->ptr-backing-store typed-data)))
+  (let [^Pointer retval (malloc (+ 1 (count data)))]
+    (.setString retval 0 data "ASCII")
+    retval))
 
 
 (defn checknil
   ^Pointer [value]
-  (let [value (if (satisfies? dtype-jna/PToPtr value)
-                (dtype-jna/->ptr-backing-store value)
-                value)]
-    (if (instance? Pointer value)
-      (checknil (Pointer/nativeValue value))
-      (if (= 0 (long value))
-        (throw (ex-info "Pointer value is nil"
-                        {}))
-        (Pointer. value)))))
+  (if (instance? Pointer value)
+    (checknil (Pointer/nativeValue value))
+    (if (= 0 (long value))
+      (throw (ex-info "Pointer value is nil"
+                      {}))
+      (Pointer. value))))
 
 
 (defn ensure-type
