@@ -5,10 +5,11 @@
             [tech.datatype :as dtype]
             [tech.jna.base :as jna]
             [tech.resource :as resource]
+            [tech.gc-resource :as gc-resource]
             [clojure.core.matrix.protocols :as mp])
   (:import [com.sun.jna Pointer Native Function NativeLibrary]
            [com.sun.jna.ptr PointerByReference]
-           [java.nio ByteBuffer]))
+           [java.nio ByteBuffer Buffer]))
 
 
 (set! *warn-on-reflection* true)
@@ -131,21 +132,37 @@
                         (unsigned/->typed-buffer item))))
 
 
-;;If you are a typed-pointer then you can advertise that you support the jna-buffer container type.
-;;If you are not, then do not.
 (defn typed-pointer?
+  "True if you are can be substituted for typed pointers directly."
   [item]
   (and (unsigned/typed-buffer? item)
        (satisfies? PToPtr item)))
 
 
+(defn buffer-as-typed-pointer
+  "Return a typed pointer that shares the backing store with the original direct
+  pointer."
+  [^Buffer nio-buffer]
+  (when (.isDirect nio-buffer)
+    (let [ptr-value (Native/getDirectBufferPointer (primitive/->buffer-backing-store
+                                                    nio-buffer))
+          item-dtype (dtype/get-datatype nio-buffer)]
+      (->TypedPointer ptr-value (* (dtype/ecount nio-buffer)
+                                   (dtype/datatype->byte-size item-dtype))
+                      item-dtype))))
+
+
 (defn as-typed-pointer
-  "Get something substitutable as a typed-pointer.
-Implement all the protocols necessary to be tech.datatype.java-unsigned/typed-buffer
-*and* PToPtr and you can be considered a typed-pointer."
+  "Get something substitutable as a typed-pointer.  Implement all the protocols
+  necessary to be tech.datatype.java-unsigned/typed-buffer *and* PToPtr and you can be
+  considered a typed-pointer, *or* if you implemented unsigned/typed-buffer? and your
+  backing store is a direct nio buffer (.isDirect returns true)"
   [item]
-  (when (typed-pointer? item)
-    item))
+  (cond
+    (typed-pointer? item)
+    item
+    (unsigned/typed-buffer? item)
+    (buffer-as-typed-pointer item)))
 
 
 (defn ->typed-pointer
@@ -197,8 +214,10 @@ and we convert your thing to a typed pointer."
                            datatype elem-count-or-seq options)
         byte-len (* n-elems (dtype-base/datatype->byte-size datatype))
         data (Native/malloc byte-len)
-        _ (resource/make-resource #(Native/free data))
         retval (unsafe-address->typed-pointer data byte-len datatype)]
+    ;;This will be freed if either the resource context is released *or*
+    ;;the return value goes out of scope.
+    (gc-resource/track retval #(Native/free data))
     (when-not (number? elem-count-or-seq)
       (let [jvm-datatype (unsigned/datatype->jvm-datatype datatype)
             data-ary (dtype/make-array-of-type jvm-datatype elem-count-or-seq {:unchecked? true})]
@@ -256,7 +275,39 @@ and we convert your thing to a typed pointer."
                         (unsigned/->typed-buffer dst) dst-offset
                         n-elems options))))
 
-;;Add array to buffer and back fast paths
+
+(defn- attempt-as-typed-pointer-copy
+  [src src-offset dst dst-offset n-elems options]
+  (let [src-ptr (as-typed-pointer src)
+        dst-ptr (as-typed-pointer dst)]
+    (println src-ptr dst-ptr src dst)
+    (if (and src-ptr dst-ptr)
+      (do
+        (buffer->buffer-copy src-ptr src-offset dst-ptr dst-offset n-elems options))
+      (do
+        (dtype-base/copy! (unsigned/->typed-buffer src) src-offset
+                          (unsigned/->typed-buffer dst) dst-offset
+                          n-elems options)))))
+
+
+;;Override the typed-buffer copy mechanism to check if the thing can be converted
+;;to a typed pointer which has faster copy mechanisms
+(def possible-fast-path
+  (->>
+   (for [src-dtype unsigned/datatypes
+         dst-dtype unsigned/datatypes]
+     (do
+       (dtype-base/add-copy-operation :typed-buffer :jna-buffer src-dtype dst-dtype true
+                                      attempt-as-typed-pointer-copy)
+       (dtype-base/add-copy-operation :jna-buffer :typed-buffer src-dtype dst-dtype true
+                                      attempt-as-typed-pointer-copy)
+       (dtype-base/add-copy-operation :nio-buffer :jna-buffer src-dtype dst-dtype true
+                                      attempt-as-typed-pointer-copy)
+       (dtype-base/add-copy-operation :jna-buffer :nio-buffer src-dtype dst-dtype true
+                                      attempt-as-typed-pointer-copy)
+       [src-dtype dst-dtype]))
+   vec))
+
 
 (defmacro array-copy-fns
   []
