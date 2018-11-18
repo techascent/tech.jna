@@ -5,15 +5,20 @@
            [com.sun.jna.ptr PointerByReference]))
 
 
-
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
 
 (defprotocol PToPtr
   (->ptr-backing-store [item]
-    "Conversion to a jna pointer type that points to the data of the
-object."))
+    "Conversion to a jna pointer type that points to the data of the object."))
+
+
+(extend-protocol PToPtr
+  Pointer
+  (->ptr-backing-store [item] item)
+  PointerByReference
+  (->ptr-backing-store [item] (.getValue ^PointerByReference item)))
 
 
 (defn add-library-path
