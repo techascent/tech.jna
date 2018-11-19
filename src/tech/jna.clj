@@ -111,12 +111,11 @@ Use with care; the default if non found is:
 
 (defn checknil
   ^Pointer [value]
-  (if (instance? Pointer value)
-    (checknil (Pointer/nativeValue value))
-    (if (= 0 (long value))
+  (let [value (->ptr-backing-store value)]
+    (if (= 0 (long (Pointer/nativeValue value)))
       (throw (ex-info "Pointer value is nil"
                       {}))
-      (Pointer. value))))
+      value)))
 
 
 (defn ensure-type
@@ -131,7 +130,8 @@ Use with care; the default if non found is:
 
 (defn ensure-ptr
   ^Pointer [item]
-  (base/ensure-ptr item))
+  (base/ensure-ptr (->ptr-backing-store
+                    item)))
 
 
 (defmacro def-jna-fn
