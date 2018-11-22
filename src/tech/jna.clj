@@ -1,6 +1,6 @@
 (ns tech.jna
   (:require [tech.jna.base :as base]
-            [tech.gc-resource :as gc-resource])
+            [tech.resource :as resource])
   (:import [com.sun.jna Native NativeLibrary Pointer Function Platform]
            [com.sun.jna.ptr PointerByReference]))
 
@@ -81,8 +81,9 @@ Use with care; the default if non found is:
   and gc system."
   ^Pointer [^long num-bytes]
   (let [retval (malloc-untracked num-bytes)]
-    (gc-resource/track retval #(Native/free (Pointer/nativeValue retval)))
-    retval))
+    (resource/track retval
+                    #(Native/free (Pointer/nativeValue retval))
+                    [:gc :stack])))
 
 
 (defn unsafe-read-byte
