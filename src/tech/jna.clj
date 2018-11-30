@@ -135,6 +135,13 @@ Use with care; the default if non found is:
                     item)))
 
 
+(defn size-t
+  [item]
+  (case Native/SIZE_T_SIZE
+    4 (int item)
+    8 (long item)))
+
+
 (defmacro def-jna-fn
   "TVM functions are very regular so the mapping to them can exploit this.
 Argpair is of type [symbol type-coersion]."
