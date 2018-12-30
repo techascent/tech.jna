@@ -3,7 +3,7 @@
   :url "http://github.com/tech-ascent/tech.jna"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.9.0"]
-                 [net.java.dev.jna/jna "5.0.0"]
-                 [techascent/tech.resource "4.0"]]
-  :profiles {:dev {:dependencies [[com.taoensso/timbre "4.10.0"]]}})
+  :plugins [[lein-tools-deps "0.4.1"]]
+  :middleware [lein-tools-deps.plugin/resolve-dependencies-with-deps-edn]
+  :lein-tools-deps/config {:config-files [:install :user :project]}
+  :profiles {:dev {:lein-tools-deps/config {:resolve-aliases [:test]}}})
