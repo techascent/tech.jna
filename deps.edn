@@ -1,6 +1,6 @@
 {:paths ["src"]
  :deps {org.clojure/clojure {:mvn/version "1.9.0"}
         net.java.dev.jna/jna {:mvn/version "5.0.0"}
-        techascent/tech.resource {:mvn/version "4.1"}}
+        techascent/tech.resource {:mvn/version "4.2"}}
  :aliases {:test {:extra-paths ["test"]
                   :extra-deps {com.taoensso/timbre {:mvn/version "4.10.0"}}}}}
