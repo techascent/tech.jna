@@ -10,14 +10,29 @@
 
 
 (defprotocol PToPtr
+  (is-jna-ptr-convertible? [item])
   (->ptr-backing-store [item]
     "Conversion to a jna pointer type that points to the data of the object."))
 
 
+(defn ptr-convertible?
+  [item]
+  (when (and item (satisfies? PToPtr item))
+    (is-jna-ptr-convertible? item)))
+
+
+(defn as-ptr
+  [item]
+  (when (ptr-convertible? item)
+    (->ptr-backing-store item)))
+
+
 (extend-protocol PToPtr
   Pointer
+  (is-jna-ptr-convertible? [item] true)
   (->ptr-backing-store [item] item)
   PointerByReference
+  (is-jna-ptr-convertible? [item] true)
   (->ptr-backing-store [item] (.getValue ^PointerByReference item)))
 
 
