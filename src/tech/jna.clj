@@ -162,3 +162,13 @@ Use with care; the default if non found is:
 Argpair is of type [symbol type-coersion]."
   [libname fn-name docstring rettype & argpairs]
   `(base/def-jna-fn ~libname ~fn-name ~docstring ~rettype ~@argpairs))
+
+
+(defn c-library-name
+  ^String []
+  (base/c-library-name))
+
+
+(defn math-library-name
+  ^String []
+  (base/math-library-name))
