@@ -7,10 +7,10 @@
            [java.io File]))
 
 
-(def taoensso-logger (try (require '[tech.jna.timbre-log])
-                          (resolve 'tech.jna.timbre-log/log-info)
-                          (catch Throwable e
-                            nil)))
+(def taoensso-logger (future (try (require '[tech.jna.timbre-log])
+                                  (resolve 'tech.jna.timbre-log/log-info)
+                                  (catch Throwable e
+                                    nil))))
 
 
 (set! *warn-on-reflection* true)
@@ -19,8 +19,8 @@
 
 (defn log-info
   [log-str]
-  (if taoensso-logger
-    (taoensso-logger log-str)
+  (if-let [logger @taoensso-logger]
+    (logger log-str)
     (println log-str)))
 
 
