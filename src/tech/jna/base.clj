@@ -7,20 +7,19 @@
            [java.io File]))
 
 
-(def taoensso-logger (try (require '[tech.jna.timbre-log])
-                          (resolve 'tech.jna.timbre-log/log-info)
-                          (catch Throwable e
-                            nil)))
-
-
-(set! *warn-on-reflection* true)
-(set! *unchecked-math* :warn-on-boxed)
+;;Moved into future due to loading time issues.
+;;This takes at least 1 second alone if not longer.
+(def taoensso-logger (future
+                       (try (require '[tech.jna.timbre-log])
+                            (resolve 'tech.jna.timbre-log/log-info)
+                            (catch Throwable e
+                              nil))))
 
 
 (defn log-info
   [log-str]
-  (if taoensso-logger
-    (taoensso-logger log-str)
+  (if-let [logger @taoensso-logger]
+    (logger log-str)
     (println log-str)))
 
 
@@ -180,6 +179,7 @@
 
     (log-info (format "Library %s found at %s" libname [(first retval) (second retval)]))
     (last retval)))
+
 
 
 (def ^:dynamic *loaded-libraries* (atom {}))
