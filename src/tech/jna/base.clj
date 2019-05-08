@@ -6,16 +6,13 @@
            [java.lang.reflect Method]
            [java.io File]))
 
+(set! *warn-on-reflection* true)
+
 
 (def taoensso-logger (future (try (require '[tech.jna.timbre-log])
                                   (resolve 'tech.jna.timbre-log/log-info)
                                   (catch Throwable e
                                     nil))))
-
-
-(set! *warn-on-reflection* true)
-(set! *unchecked-math* :warn-on-boxed)
-
 
 (defn log-info
   [log-str]
