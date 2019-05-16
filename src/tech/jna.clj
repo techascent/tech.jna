@@ -126,6 +126,28 @@ Use with care; the default if non found is:
     retval))
 
 
+(defn string->wide-ptr
+  ^Pointer [^String data]
+  (let [^Pointer retval (malloc (-> (+ 1 (count data))
+                                    (* Native/WCHAR_SIZE)))]
+    (.setWideString retval 0 data)
+    retval))
+
+
+(defn wide-ptr->string
+  ^String [^Pointer wide-ptr]
+  (.getWideString wide-ptr 0))
+
+
+(defn create-ptr-ptr
+  "Create a pointer to a pointer."
+  [^Pointer ptr]
+  (let [ptr-map {:ptr ptr}
+        retval (PointerByReference. ptr)]
+    ;;Ensure the original ptr is referenced else you could get hurt.
+    (resource/track retval #(get ptr-map :ptr) [:gc])))
+
+
 (defn checknil
   ^Pointer [value]
   (let [value (->ptr-backing-store value)]
