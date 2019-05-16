@@ -95,9 +95,10 @@ Use with care; the default if non found is:
   "Malloc a pointer of Y bytes.  Track using both resource context
   and gc system."
   ^Pointer [^long num-bytes]
-  (let [retval (malloc-untracked num-bytes)]
+  (let [retval (malloc-untracked num-bytes)
+        native-value (Pointer/nativeValue retval)]
     (resource/track retval
-                    #(Native/free (Pointer/nativeValue retval))
+                    #(Native/free native-value)
                     [:gc :stack])))
 
 
