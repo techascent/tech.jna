@@ -288,6 +288,10 @@ Argpair is of type [symbol type-coersion]."
      ~(mapv first argpairs)
      (let [~'tvm-fn (find-function ~(str fn-name) ~libname)
            ~'fn-args (object-array ~(mapv (fn [[arg-symbol arg-coersion]]
+                                            (when (= arg-symbol arg-coersion)
+                                              (throw (ex-info (format "Argument symbol (%s) cannot match coersion (%s)"
+                                                                      arg-symbol arg-coersion)
+                                                              {})))
                                             `(~arg-coersion ~arg-symbol))
                                           argpairs))]
        ~(if rettype

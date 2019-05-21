@@ -2,7 +2,7 @@
   (:require [tech.jna.base :as base]
             [tech.resource :as resource])
   (:import [com.sun.jna Native NativeLibrary Pointer Function Platform]
-           [com.sun.jna.ptr PointerByReference]))
+           [com.sun.jna.ptr PointerByReference LongByReference IntByReference]))
 
 
 (set! *warn-on-reflection* true)
@@ -174,15 +174,38 @@ Use with care; the default if non found is:
 
 
 (defn size-t
-  [item]
+  [& [item]]
   (case Native/SIZE_T_SIZE
-    4 (int item)
-    8 (long item)))
+    4 (int (or item 0))
+    8 (long (or item 0))))
+
+
+(def size-t-type (type (size-t)))
+
+
+(def size-t-ref-type (if (= Long size-t-type)
+                       LongByReference
+                       IntByReference))
+
+
+(defn size-t-ref
+  [& [init-value]]
+  (if (= LongByReference size-t-ref-type)
+    (LongByReference. (long (or init-value 0)))
+    (IntByReference. (int (or init-value 0)))))
+
+
+(defn size-t-ref-value
+  [ref-obj]
+  (if (instance? LongByReference ref-obj)
+    (.getValue ^LongByReference ref-obj)
+    (.getValue ^IntByReference ref-obj)))
 
 
 (defmacro def-jna-fn
-  "TVM functions are very regular so the mapping to them can exploit this.
-Argpair is of type [symbol type-coersion]."
+  "Define a dynamically bound fn.  Upon first call, it will attempt to find
+  the function pointer from libname.
+  Argpair is of type [symbol type-coersion], symbol cannot match type-coersion."
   [libname fn-name docstring rettype & argpairs]
   `(base/def-jna-fn ~libname ~fn-name ~docstring ~rettype ~@argpairs))
 
