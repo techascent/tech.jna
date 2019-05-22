@@ -1,7 +1,7 @@
 (ns tech.jna
   (:require [tech.jna.base :as base]
             [tech.resource :as resource])
-  (:import [com.sun.jna Native NativeLibrary Pointer Function Platform]
+  (:import [com.sun.jna Native NativeLibrary Pointer Function Platform Structure]
            [com.sun.jna.ptr PointerByReference LongByReference IntByReference]))
 
 
@@ -33,7 +33,10 @@
   (->ptr-backing-store [item] item)
   PointerByReference
   (is-jna-ptr-convertible? [item] true)
-  (->ptr-backing-store [item] (.getValue ^PointerByReference item)))
+  (->ptr-backing-store [item] (.getValue ^PointerByReference item))
+  Structure
+  (is-jna-ptr-convertible? [item] true)
+  (->ptr-backing-store [item] (.getPointer item)))
 
 
 (defn add-library-path
