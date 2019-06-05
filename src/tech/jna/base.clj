@@ -1,6 +1,7 @@
 (ns tech.jna.base
   (:require [clojure.java.io]
-            [clojure.string :as s])
+            [clojure.string :as s]
+            [clojure.tools.logging :as log])
   (:import [com.sun.jna Native NativeLibrary Pointer Function Platform]
            [com.sun.jna.ptr PointerByReference]
            [java.lang.reflect Method]
@@ -8,17 +9,11 @@
 
 (set! *warn-on-reflection* true)
 
-
-(def taoensso-logger (future (try (require '[tech.jna.timbre-log])
-                                  (resolve 'tech.jna.timbre-log/log-info)
-                                  (catch Throwable e
-                                    nil))))
-
 (defn log-info
+  "Legacy function, will remove in a few versions."
   [log-str]
-  (if-let [logger @taoensso-logger]
-    (logger log-str)
-    (println log-str)))
+  (defonce __dep (log/info "tech.jna/log-info is deprecated"))
+  (log/info log-str))
 
 
 (defn- log-load-attempt
@@ -27,7 +22,7 @@
                         libname pathtype path (if success?
                                                 "succeeded!"
                                                 "failed"))]
-    (log-info log-str)))
+    (log/info log-str)))
 
 
 (def native-lib-methods
@@ -118,7 +113,7 @@
             (Native/extractFromResourcePath ^String path class-loader)
             (Native/extractFromResourcePath ^String path))
           (catch Throwable e
-            (log-info (format "Failed to find library %s as a resource" path))))]
+            (log/info (format "Failed to find library %s as a resource" path))))]
     (if file
       (.getCanonicalPath file)
       path)))
@@ -175,7 +170,7 @@
                                 (->> path-order
                                      (mapv #(vector % (get pathmap %)))))})))
 
-    (log-info (format "Library %s found at %s" libname [(first retval) (second retval)]))
+    (log/infof "Library %s found at %s" libname [(first retval) (second retval)])
     (last retval)))
 
 
