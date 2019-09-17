@@ -9,12 +9,6 @@
 
 (set! *warn-on-reflection* true)
 
-(defn log-info
-  "Legacy function, will remove in a few versions."
-  [log-str]
-  (defonce __dep (log/info "tech.jna/log-info is deprecated"))
-  (log/info log-str))
-
 
 (defn- log-load-attempt
   [libname pathtype path success?]
@@ -89,38 +83,38 @@
 
 
 (defmulti expand-pathtype
-  (fn [pathtype & args]
+  (fn [pathtype & _]
     pathtype))
 
 
 
 (defmethod expand-pathtype :default
-  [pathtype path]
+  [_ path]
   path)
 
 
 ;;No mangling, jna takes care of this.
 (defmethod expand-pathtype :system
-  [pathtype path]
+  [_ path]
   path)
 
 
 (defmethod expand-pathtype :resource
-  [pathtype {:keys [path class-loader]}]
+  [_ {:keys [path class-loader]}]
   (let [^File file
         (try
           (if class-loader
             (Native/extractFromResourcePath ^String path class-loader)
             (Native/extractFromResourcePath ^String path))
           (catch Throwable e
-            (log/info (format "Failed to find library %s as a resource" path))))]
+            (log/infof e "Failed to find library %s as a resource" path)))]
     (if file
       (.getCanonicalPath file)
       path)))
 
 
 (defmethod expand-pathtype :java-library-path
-  [pathtype path]
+  [_ path]
   (let [path (map-shared-library-name path)]
     (->> (s/split (System/getProperty "java.library.path") #":")
          (map #(str % File/separator path)))))
@@ -157,7 +151,7 @@
                            (try
                              [pathname load-path
                               (NativeLibrary/getInstance load-path)]
-                             (catch Throwable e))))
+                             (catch Throwable _))))
                     (remove nil?)
                     first)]
     (when-not retval
@@ -181,10 +175,9 @@
   ^NativeLibrary [libname]
   (if-let [retval (get @*loaded-libraries* libname)]
     retval
-    (do
-      (let [retval (do-load-library libname)]
-        (swap! *loaded-libraries* assoc libname retval)
-        retval))))
+    (let [retval (do-load-library libname)]
+      (swap! *loaded-libraries* assoc libname retval)
+      retval)))
 
 
 (defn jar-native-library-path
