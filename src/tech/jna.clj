@@ -15,10 +15,14 @@
     "Conversion to a jna pointer type that points to the data of the object."))
 
 
+(extend-type Object
+  PToPtr
+  (is-jna-ptr-convertible? [item] false))
+
+
 (defn ptr-convertible?
   [item]
-  (when (and item (satisfies? PToPtr item))
-    (is-jna-ptr-convertible? item)))
+  (is-jna-ptr-convertible? item))
 
 
 (defn as-ptr
