@@ -27,7 +27,7 @@
 
 (defn as-ptr
   [item]
-  (when (ptr-convertible? item)
+  (when (and item (ptr-convertible? item))
     (->ptr-backing-store item)))
 
 
