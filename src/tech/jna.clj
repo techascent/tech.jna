@@ -133,6 +133,13 @@ Use with care; the default if non found is:
     retval))
 
 
+(defn string->ptr-untracked
+  ^Pointer [^String data]
+  (let [^Pointer retval (malloc-untracked (+ 1 (count data)))]
+    (.setString retval 0 data "ASCII")
+    retval))
+
+
 (defn string->wide-ptr
   ^Pointer [^String data]
   (let [^Pointer retval (malloc (-> (+ 1 (count data))
