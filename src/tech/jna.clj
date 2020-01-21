@@ -186,12 +186,18 @@ Use with care; the default if non found is:
   (base/ensure-ptr (->ptr-backing-store
                     item)))
 
+(defmacro size-t-compile-time-switch
+  [int-body long-body]
+  (case Native/SIZE_T_SIZE
+    4 `~int-body
+    8 `~long-body))
+
 
 (defn size-t
-  [& [item]]
-  (case Native/SIZE_T_SIZE
-    4 (int (or item 0))
-    8 (long (or item 0))))
+  ([item]
+   (size-t-compile-time-switch (int item) (long item)))
+  ([]
+   (size-t-compile-time-switch (int 0) (long 0))))
 
 
 (def size-t-type (type (size-t)))
@@ -203,10 +209,14 @@ Use with care; the default if non found is:
 
 
 (defn size-t-ref
-  [& [init-value]]
-  (if (= LongByReference size-t-ref-type)
-    (LongByReference. (long (or init-value 0)))
-    (IntByReference. (int (or init-value 0)))))
+  ([]
+   (size-t-compile-time-switch
+    (IntByReference. (int 0))
+    (LongByReference. (long 0))))
+  ([item]
+   (size-t-compile-time-switch
+    (IntByReference. (int item))
+    (LongByReference. (long item)))))
 
 
 (defn size-t-ref-value
