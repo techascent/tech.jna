@@ -1,8 +1,21 @@
-(defproject techascent/tech.jna "3.24-SNAPSHOT"
-  :description "Bindings of tech.datatype system to jna."
+(defproject techascent/tech.jna "4.00"
+  :description "Bindings to JNA.  Used with libpython-clj among others."
   :url "http://github.com/tech-ascent/tech.jna"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :plugins [[lein-tools-deps "0.4.1"]]
-  :middleware [lein-tools-deps.plugin/resolve-dependencies-with-deps-edn]
-  :lein-tools-deps/config {:config-files [:install :user :project]})
+  :dependencies [[org.clojure/clojure      "1.10.1-beta2"]
+                 [net.java.dev.jna/jna     "5.6.0"]
+                 [techascent/tech.resource "5.00"]]
+  :profiles {:codox
+             {:dependencies [[codox-theme-rdash "0.1.2"]]
+              :plugins [[lein-codox "0.10.7"]]
+              :codox {:project {:name "tech.jna"}
+                      :metadata {:doc/format :markdown}
+                      :themes [:rdash]
+                      :source-paths ["src"]
+                      :output-path "docs"
+                      :doc-paths ["topics"]
+                      :source-uri "https://github.com/techascent/tech.ml.dataset/blob/master/{filepath}#L{line}"
+                      :namespaces [tech.v3.jna]}}}
+  :aliases {"codox" ["with-profile" "codox,dev" "codox"]}
+  )

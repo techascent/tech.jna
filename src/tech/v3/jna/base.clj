@@ -1,6 +1,5 @@
-(ns tech.jna.base
-  (:require [clojure.java.io]
-            [clojure.string :as s]
+(ns tech.v3.jna.base
+  (:require [clojure.string :as s]
             [clojure.tools.logging :as log])
   (:import [com.sun.jna Native NativeLibrary Pointer Function Platform]
            [com.sun.jna.ptr PointerByReference]
@@ -196,9 +195,8 @@ native libraries under this location:"
 (defn ensure-type
   [item-cls item]
   (when-not (instance? item-cls item)
-    (throw (ex-info "Item is not desired type"
-                    {:item-cls item-cls
-                     :item item})))
+    (throw (Exception. (format "Expected item of type %s, got %s"
+                               item-cls (.getClass ^Object item)))))
   item)
 
 
