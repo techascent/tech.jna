@@ -1,4 +1,4 @@
-(defproject techascent/tech.jna "4.02-SNAPSHOT"
+(defproject techascent/tech.jna "4.02"
   :description "Bindings to JNA.  Used with libpython-clj among others."
   :url "http://github.com/tech-ascent/tech.jna"
   :license {:name "Eclipse Public License"

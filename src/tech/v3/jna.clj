@@ -8,7 +8,8 @@
   [`tech.v3.resource/chain-resources`](https://techascent.github.io/tech.resource/tech.v3.resource.html#var-chain-resources).
   "
   (:require [tech.v3.jna.base :as base]
-            [tech.v3.resource :as resource])
+            [tech.v3.resource :as resource]
+            [clojure.tools.logging :as log])
   (:import [com.sun.jna Native NativeLibrary Pointer Function Platform Structure]
            [com.sun.jna.ptr PointerByReference LongByReference IntByReference]))
 
@@ -135,6 +136,25 @@ Use with care; the default if non found is:
    (malloc num-bytes nil)))
 
 
+(defn malloc-logged
+  "See documentation for malloc.  In addition, ptr address and num bytes will be logged
+  to the info channel on allocation and deallocation."
+  (^Pointer [^long num-bytes {:keys [resource-type]
+                              :or {resource-type #{:gc}}}]
+   (let [retval (Pointer. (Native/malloc num-bytes))
+         native-value (Pointer/nativeValue retval)]
+     (log/infof "Malloc - 0x%016X - %016d bytes" native-value num-bytes)
+     (if resource-type
+       (resource/track retval
+                       {:dispose-fn #(do
+                                       (log/infof "Free   - 0x%016X - %016d bytes" native-value num-bytes)
+                                       (Native/free native-value))
+                        :track-type resource-type})
+       retval)))
+  (^Pointer [^long num-bytes]
+   (malloc-logged num-bytes nil)))
+
+
 (defn malloc-untracked
   "Malloc pointer of Y bytes.  Up to caller to call Native/free on result at some
   point"
@@ -185,7 +205,7 @@ Use with care; the default if non found is:
 
 
 (defn string->wide-ptr
-  "Convert a string into a wchar-t using utf-16."
+  "Convert a string into a wchar-t using utf-16.  Default resource type is :gc."
   (^Pointer [^String data options]
    (let [^Pointer retval (malloc (-> (+ 1 (count data))
                                      (* Native/WCHAR_SIZE))
@@ -193,7 +213,7 @@ Use with care; the default if non found is:
      (.setWideString retval 0 data)
      retval))
   (^Pointer [data]
-   (string->wide-ptr data)))
+   (string->wide-ptr data nil)))
 
 
 (defn wide-ptr->string
