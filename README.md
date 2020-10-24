@@ -2,7 +2,10 @@
 
 [![Clojars Project](https://img.shields.io/clojars/v/techascent/tech.jna.svg)](https://clojars.org/techascent/tech.jna)
 
-For a bit of explanation, checkout our [blog](http://techascent.com/blog/jna-simplifies-your-life.html).
+
+* [API Documentation](https://techascent.github.io/tech.jna/)
+* For a bit of explanation, checkout our [blog](http://techascent.com/blog/jna-simplifies-your-life.html).
+
 
 
 ## Usage

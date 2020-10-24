@@ -297,7 +297,16 @@ Use with care; the default if non found is:
      is what will be displayed in the function's docstring and type-coersion is a
      function that is run at function call time to ensure the type is the exact
      correct type.  If coersion function is wrong and creates the wrong type for
-     the function signature your program will probably crash."
+     the function signature your program will probably crash.
+
+```clojure
+(jna/def-jna-fn (jna/c-library-name) strcpy
+  \"Copy a (hopefully) null terminated string into a pointer.  This is a horrible idea.\"
+  Pointer
+  [dest jna/ensure-ptr]
+  [src jna/ensure-ptr])
+```"
+
   [libname fn-name docstring rettype & argpairs]
   `(base/def-jna-fn ~libname ~fn-name ~docstring ~rettype ~@argpairs))
 
