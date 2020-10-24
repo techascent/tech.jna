@@ -11,7 +11,7 @@
 ## Usage
 
 ```clojure
-(require '[tech.jna :as jna])
+(require '[tech.v3.jna :as jna])
 (jna/def-jna-fn "c" memset
         "Set byte memory to a value"
         com.sun.jna.Pointer ;;void* return value
