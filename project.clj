@@ -1,4 +1,4 @@
-(defproject techascent/tech.jna "4.01-SNAPSHOT"
+(defproject techascent/tech.jna "4.01"
   :description "Bindings to JNA.  Used with libpython-clj among others."
   :url "http://github.com/tech-ascent/tech.jna"
   :license {:name "Eclipse Public License"
@@ -15,7 +15,7 @@
                       :source-paths ["src"]
                       :output-path "docs"
                       :doc-paths ["topics"]
-                      :source-uri "https://github.com/techascent/tech.ml.dataset/blob/master/{filepath}#L{line}"
+                      :source-uri "https://github.com/techascent/tech.jna/blob/master/{filepath}#L{line}"
                       :namespaces [tech.v3.jna]}}}
   :aliases {"codox" ["with-profile" "codox,dev" "codox"]}
   )
