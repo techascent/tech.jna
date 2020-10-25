@@ -120,39 +120,29 @@ Use with care; the default if non found is:
          longer reachable by our program.
       * `:stack` - Must be used within a tech.v3.resource/stack-resource-context and
          ensures the memory will be freed when the nearest scope has exited.
+  * `:log-level` - Defaults to nil - if provided malloc/free call pairs will be logged
+     at this level.
 
   For a much more thorough treatment of native heap data, please see the documentation
-  for [dtype-next](https://cnuernber.github.io/dtype-next/)."
-  (^Pointer [^long num-bytes {:keys [resource-type]
+  for [dtype-next - native-buffer](https://cnuernber.github.io/dtype-next/tech.v3.datatype.native-buffer.html)"
+  (^Pointer [^long num-bytes {:keys [resource-type log-level]
                               :or {resource-type #{:gc}}}]
    (let [retval (Pointer. (Native/malloc num-bytes))
          native-value (Pointer/nativeValue retval)]
-     (if resource-type
-       (resource/track retval
-                       {:dispose-fn #(Native/free native-value)
-                        :track-type resource-type})
-       retval)))
-  (^Pointer [^long num-bytes]
-   (malloc num-bytes nil)))
-
-
-(defn malloc-logged
-  "See documentation for malloc.  In addition, ptr address and num bytes will be logged
-  to the info channel on allocation and deallocation."
-  (^Pointer [^long num-bytes {:keys [resource-type]
-                              :or {resource-type #{:gc}}}]
-   (let [retval (Pointer. (Native/malloc num-bytes))
-         native-value (Pointer/nativeValue retval)]
-     (log/infof "Malloc - 0x%016X - %016d bytes" native-value num-bytes)
+     (when log-level
+       (log/logf log-level "Malloc - 0x%016X - %016d bytes" (.address retval) num-bytes))
      (if resource-type
        (resource/track retval
                        {:dispose-fn #(do
-                                       (log/infof "Free   - 0x%016X - %016d bytes" native-value num-bytes)
+                                       (when log-level
+                                         (log/logf log-level
+                                                   "Free   - 0x%016X - %016d bytes"
+                                                   (.address retval) num-bytes))
                                        (Native/free native-value))
                         :track-type resource-type})
        retval)))
   (^Pointer [^long num-bytes]
-   (malloc-logged num-bytes nil)))
+   (malloc num-bytes nil)))
 
 
 (defn malloc-untracked
