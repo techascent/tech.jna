@@ -130,14 +130,14 @@ Use with care; the default if non found is:
    (let [retval (Pointer. (Native/malloc num-bytes))
          native-value (Pointer/nativeValue retval)]
      (when log-level
-       (log/logf log-level "Malloc - 0x%016X - %016d bytes" (.address retval) num-bytes))
+       (log/logf log-level "Malloc - 0x%016X - %016d bytes" native-value num-bytes))
      (if resource-type
        (resource/track retval
                        {:dispose-fn #(do
                                        (when log-level
                                          (log/logf log-level
                                                    "Free   - 0x%016X - %016d bytes"
-                                                   (.address retval) num-bytes))
+                                                   native-value num-bytes))
                                        (Native/free native-value))
                         :track-type resource-type})
        retval)))
