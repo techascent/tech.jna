@@ -115,13 +115,9 @@ Use with care; the default if non found is:
 
   Options:
 
-   * `:resource-type` - Defaults to `:gc`.  May be one or both of
-      * `:gc` - rely on the garbage collector to let us know when the ptr is no
-         longer reachable by our program.
-      * `:stack` - Must be used within a tech.v3.resource/stack-resource-context and
-         ensures the memory will be freed when the nearest scope has exited.
-  * `:log-level` - Defaults to nil - if provided malloc/free call pairs will be logged
-     at this level.
+   * `:resource-type` - `:track-type` in tech.v3.resource with passthrough semantics.
+   * `:log-level` - Defaults to nil - if provided malloc/free call pairs will be logged
+      at this level.
 
   For a much more thorough treatment of native heap data, please see the documentation
   for [dtype-next - native-buffer](https://cnuernber.github.io/dtype-next/tech.v3.datatype.native-buffer.html)"

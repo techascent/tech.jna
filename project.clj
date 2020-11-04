@@ -1,11 +1,11 @@
-(defproject techascent/tech.jna "4.05-SNAPSHOT"
+(defproject techascent/tech.jna "4.05"
   :description "Bindings to JNA.  Used with libpython-clj among others."
   :url "http://github.com/tech-ascent/tech.jna"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure      "1.10.1-beta2"]
                  [net.java.dev.jna/jna     "5.6.0"]
-                 [techascent/tech.resource "5.01"]]
+                 [techascent/tech.resource "5.02"]]
   :profiles {:codox
              {:dependencies [[codox-theme-rdash "0.1.2"]]
               :plugins [[lein-codox "0.10.7"]]
