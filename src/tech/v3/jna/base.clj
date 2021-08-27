@@ -4,6 +4,7 @@
   (:import [com.sun.jna Native NativeLibrary Pointer Function Platform]
            [com.sun.jna.ptr PointerByReference]
            [java.lang.reflect Method]
+           [java.lang UnsatisfiedLinkError]
            [java.io File]))
 
 (set! *warn-on-reflection* true)
@@ -150,7 +151,9 @@
                            (try
                              [pathname load-path
                               (NativeLibrary/getInstance load-path)]
-                             (catch Throwable _))))
+                             (catch UnsatisfiedLinkError _)
+                             (catch Throwable ex
+                               (log/error ex)))))
                     (remove nil?)
                     first)]
     (when-not retval

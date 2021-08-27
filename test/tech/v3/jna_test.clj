@@ -31,3 +31,16 @@
         dst (jna/malloc strlen)]
     (strcpy dst src)
     (is (= src-str (jna/variable-byte-ptr->string dst)))))
+
+(jna/def-jna-fn "doesnt-exist" phantom
+ "Verify that a unloadable library is handled gracefully"
+ Pointer
+ [dest jna/ensure-ptr]
+ [src jna/ensure-ptr])
+
+(deftest phantom-test
+  (let [src-str "dog jumped over moon"
+        strlen (inc (count src-str))
+        src (jna/string->ptr src-str)
+        dst (jna/malloc strlen)]
+    (is (thrown? clojure.lang.ExceptionInfo (phantom dst src)))))
