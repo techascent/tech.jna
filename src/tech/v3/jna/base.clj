@@ -210,8 +210,8 @@ native libraries under this location:"
 
 
 (def do-find-function
-  (fn [fn-name libname]
-    (.getFunction ^NativeLibrary (load-library libname) fn-name)))
+  (memoize (fn [fn-name libname]
+             (.getFunction ^NativeLibrary (load-library libname) fn-name))))
 
 
 (defn find-function
